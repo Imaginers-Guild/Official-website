@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagineers' Guild | System Portal</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config for Custom Colors/Fonts -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'guild-dark': '#0B0E14',
+                        'guild-blue': '#00F0FF',
+                        'guild-gold': '#FFD700',
+                        'guild-glass': 'rgba(11, 14, 20, 0.85)',
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', 'monospace'],
+                        sans: ['Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    animation: {
+                        'spin-slow': 'spin 10s linear infinite',
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scanline': 'scanline 8s linear infinite',
+                    },
+                    keyframes: {
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            overflow: hidden; /* Prevent scroll on boot */
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0E14; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00F0FF; 
+            border-radius: 4px;
+        }
+
+        /* CRT Effect Overlay */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 50;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+        }
+        
+        .glow-box {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            border: 1px solid rgba(0, 240, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- SVGs as Components ---
+        const IconCpu = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+        );
+        const IconUsers = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        );
+        const IconZap = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        );
+        const IconSend = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        );
+        const IconHexagon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        );
+        // FIX: Added IconDownload definition here
+        const IconDownload = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        );
+
+        // --- Robot Component (Animated Logo) ---
+        const RobotLogo = () => (
+            <div className="relative w-24 h-24 mx-auto mb-4 group cursor-pointer">
+                <div className="absolute inset-0 bg-guild-blue rounded-full opacity-20 blur-xl group-hover:opacity-40 transition-opacity"></div>
+                <svg viewBox="0 0 100 100" className="w-full h-full relative z-10 drop-shadow-lg">
+                    {/* Head */}
+                    <path d="M20,40 Q20,20 50,20 Q80,20 80,40 L80,65 Q80,85 50,85 Q20,85 20,65 Z" fill="#0B0E14" stroke="#FFD700" strokeWidth="3" />
+                    {/* Eyes (Animated) */}
+                    <circle cx="35" cy="50" r="8" fill="#00F0FF" className="animate-pulse" />
+                    <circle cx="65" cy="50" r="8" fill="#00F0FF" className="animate-pulse" />
+                    {/* Mouth */}
+                    <path d="M40,70 Q50,75 60,70" fill="none" stroke="#FFD700" strokeWidth="2" />
+                    {/* Antenna */}
+                    <line x1="50" y1="20" x2="50" y2="5" stroke="#00F0FF" strokeWidth="2" />
+                    <circle cx="50" cy="5" r="3" fill="#FFD700" />
+                </svg>
+            </div>
+        );
+
+        // --- Boot Sequence Component ---
+        const BootSequence = ({ onComplete }) => {
+            const [lines, setLines] = useState([]);
+            const bootText = [
+                "> SYSTEM_INIT...",
+                "> CHECKING_KERNEL... OK",
+                "> LOADING_GUILD_PROTOCOLS...",
+                "> AUTHENTICATING USER...",
+                "> ACCESS_GRANTED.",
+                "> WELCOME, IMAGINEER."
+            ];
+
+            useEffect(() => {
+                let delay = 0;
+                bootText.forEach((text, index) => {
+                    delay += Math.random() * 500 + 300;
+                    setTimeout(() => {
+                        setLines(prev => [...prev, text]);
+                        if (index === bootText.length - 1) {
+                            setTimeout(onComplete, 1000);
+                        }
+                    }, delay);
+                });
+            }, []);
+
+            return (
+                <div className="h-screen w-full bg-black flex flex-col justify-center items-center font-mono text-guild-blue p-8 crt">
+                    <div className="w-full max-w-lg border border-guild-blue p-6 rounded bg-guild-dark/50 glow-box">
+                        <div className="flex justify-between items-center mb-4 border-b border-guild-blue/30 pb-2">
+                            <span>BOOT_LOADER.EXE</span>
+                            <span className="animate-pulse">v1.0.4</span>
+                        </div>
+                        <div className="space-y-2 h-48 overflow-y-auto">
+                            {lines.map((line, i) => (
+                                <div key={i} className="typing-effect">{line}</div>
+                            ))}
+                            <div className="animate-pulse">_</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main Dashboard Component ---
+        const Dashboard = () => {
+            const [activeTab, setActiveTab] = useState('mission');
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+            const renderContent = () => {
+                switch(activeTab) {
+                    case 'mission':
+                        return (
+                            <div className="space-y-6 animate-fadeIn">
+                                <h2 className="text-3xl font-bold text-guild-gold glow-text mb-6">MISSION_LOG</h2>
+                                <div className="p-6 border-l-2 border-guild-blue bg-guild-blue/5 backdrop-blur-sm">
+                                    <p className="text-lg leading-relaxed text-gray-300">
+                                        "The motto of this society is to work on new ideas and innovations that uplift the global community and thrives knowledge and understanding of the Universe."
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                                    <div className="bg-guild-dark border border-gray-700 p-4 rounded hover:border-guild-gold transition-colors">
+                                        <h3 className="text-guild-blue font-mono mb-2">OBJECTIVE_01</h3>
+                                        <p className="text-sm text-gray-400">Explore knowledge, Generate Ideas & foster passion for learning.</p>
+                                    </div>
+                                    <div className="bg-guild-dark border border-gray-700 p-4 rounded hover:border-guild-gold transition-colors">
+                                        <h3 className="text-guild-blue font-mono mb-2">OBJECTIVE_02</h3>
+                                        <p className="text-sm text-gray-400">Create scientific solutions for real-world problems.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    case 'projects':
+                        return (
+                            <div className="space-y-6 animate-fadeIn">
+                                <h2 className="text-3xl font-bold text-guild-gold glow-text mb-6">ACTIVE_PROJECTS</h2>
+                                
+                                {/* Featured Project Card */}
+                                <div className="relative overflow-hidden group border border-guild-blue/50 rounded-lg p-6 bg-gradient-to-br from-guild-dark to-slate-900 glow-box">
+                                    <div className="absolute top-0 right-0 p-2 text-xs font-mono text-guild-blue border-b border-l border-guild-blue/30 bg-black/50">
+                                        PRIORITY: ALPHA
+                                    </div>
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="p-3 bg-guild-blue/10 rounded-full">
+                                            <IconZap className="text-guild-blue w-8 h-8" />
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-500 uppercase tracking-widest">Project Lead</p>
+                                            <p className="text-guild-gold font-bold">Somnath B.</p>
+                                        </div>
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-white mb-2">FIRE FIGHTING ROVER</h3>
+                                    <p className="text-gray-400 mb-4 text-sm">
+                                        Development of a Fire fighting rover that is capable of extinguishing minute fire in a difficult position to be reached by any Human.
+                                        The Imagineers' Guild handles all scientific and technical aspects of this initiative.
+                                    </p>
+                                    
+                                    {/* Blueprint Graphic */}
+                                    <div className="h-32 w-full bg-slate-800/50 rounded border border-dashed border-gray-600 flex items-center justify-center relative overflow-hidden mb-4">
+                                        <div className="absolute inset-0 grid grid-cols-6 grid-rows-4 gap-1 opacity-20">
+                                            {[...Array(24)].map((_, i) => <div key={i} className="border border-guild-blue/30"></div>)}
+                                        </div>
+                                        {/* Updated to show file availability */}
+                                        <span className="text-guild-blue font-mono text-xs opacity-70">SCHEMATIC_VIEWER_V1.0</span>
+                                    </div>
+
+                                    {/* DOWNLOAD SECTION - ADDED HERE */}
+                                    <div className="border-t border-gray-700 pt-4 flex gap-3">
+                                        {/* Replace '#' with your actual Google Drive or Dropbox link */}
+                                        <a href="https://drive.google.com/file/d/1EK6qcx61Mw6xNCt_ltyQljj-nTX0e5OZ/view?usp=drivesdk" target="_blank" className="flex items-center gap-2 bg-guild-blue/10 border border-guild-blue/50 hover:bg-guild-blue/20 text-guild-blue px-4 py-2 text-sm font-mono rounded transition-colors group">
+                                            <IconDownload className="w-4 h-4 group-hover:animate-bounce" />
+                                            ACCESS_SCHEMATICS.JPG
+                                        </a>
+                                        <a href="https://drive.google.com/file/d/17N8hLs7CvmIkn8dyDjiVzwabpc2lyoiQ/view?usp=sharing" target="_blank" className="flex items-center gap-2 bg-guild-gold/10 border border-guild-gold/50 hover:bg-guild-gold/20 text-guild-gold px-4 py-2 text-sm font-mono rounded transition-colors">
+                                            <IconDownload className="w-4 h-4" />
+                                            PROJECT_SLIDES.PDF
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 border border-gray-800 rounded text-center opacity-60">
+                                    <p className="font-mono text-xs">... SCANNING FOR NEW ORDERS FROM TECH STARTUPS ...</p>
+                                </div>
+                            </div>
+                        );
+                    case 'team':
+                        return (
+                            <div className="space-y-6 animate-fadeIn">
+                                <h2 className="text-3xl font-bold text-guild-gold glow-text mb-6">PERSONNEL_DATABASE</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    
+                                    {/* Card 1: Founder */}
+                                    <div className="bg-guild-dark border-l-4 border-guild-gold p-5 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-guild-gold/20 rounded-full blur-xl group-hover:bg-guild-gold/40 transition-all"></div>
+                                        <p className="font-mono text-xs text-guild-gold mb-1">FOUNDER</p>
+                                        <h3 className="text-xl font-bold text-white">Spandan Kundu</h3>
+                                        <p className="text-sm text-gray-400 mb-3">Undergraduate, Physics Major</p>
+                                        <div className="text-xs font-mono text-gray-500 border-t border-gray-800 pt-2 mt-2">
+                                            CONTACT: <br/>
+                                            spandank2005@gmail.com
+                                        </div>
+                                    </div>
+
+                                    {/* Card 2: Co-Founder */}
+                                    <div className="bg-guild-dark border-l-4 border-guild-blue p-5 relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 -mt-2 -mr-2 w-16 h-16 bg-guild-blue/20 rounded-full blur-xl group-hover:bg-guild-blue/40 transition-all"></div>
+                                        <p className="font-mono text-xs text-guild-blue mb-1">CO-FOUNDER & DIRECTOR</p>
+                                        <h3 className="text-xl font-bold text-white">Somnath Bhattacharya</h3>
+                                        <p className="text-sm text-gray-400 mb-3">Undergraduate, Electrical & Electronics Engineering Major</p>
+                                        <div className="text-xs font-mono text-gray-500 border-t border-gray-800 pt-2 mt-2">
+                                            CONTACT: <br/>
+                                            sb1153759@gmail.com
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div className="mt-8 p-4 bg-slate-900/50 rounded border border-gray-800 text-center">
+                                    <p className="text-gray-400 italic">"We need curious and creative minds from across the globe."</p>
+                                </div>
+                            </div>
+                        );
+                    case 'join':
+                        return (
+                            <div className="space-y-6 animate-fadeIn">
+                                <h2 className="text-3xl font-bold text-guild-gold glow-text mb-6">TRANSMISSION_UPLINK</h2>
+                                <p className="text-gray-300">Ready to join the Society for Invention and Innovation? Establish a secure connection below.</p>
+                                
+                                <form className="space-y-4 max-w-md" onSubmit={(e) => { e.preventDefault(); alert('Transmission Sent to Guild HQ!'); }}>
+                                    <div>
+                                        <label className="block text-xs font-mono text-guild-blue mb-1">CODENAME / NAME</label>
+                                        <input type="text" className="w-full bg-black/50 border border-guild-blue/50 text-white p-2 focus:outline-none focus:border-guild-gold transition-colors font-mono" placeholder="Enter identification..." />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-mono text-guild-blue mb-1">FREQUENCY / EMAIL</label>
+                                        <input type="email" className="w-full bg-black/50 border border-guild-blue/50 text-white p-2 focus:outline-none focus:border-guild-gold transition-colors font-mono" placeholder="Imaginers.Guild@outlook.com" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-mono text-guild-blue mb-1">MESSAGE_PACKET</label>
+                                        <textarea rows="4" className="w-full bg-black/50 border border-guild-blue/50 text-white p-2 focus:outline-none focus:border-guild-gold transition-colors font-mono" placeholder="State your intent..."></textarea>
+                                    </div>
+                                    <button className="w-full bg-guild-blue/10 hover:bg-guild-blue/30 text-guild-blue border border-guild-blue py-3 font-bold tracking-wider transition-all hover:shadow-[0_0_15px_rgba(0,240,255,0.5)] flex items-center justify-center gap-2">
+                                        <IconSend className="w-4 h-4" /> TRANSMIT SIGNAL
+                                    </button>
+                                </form>
+                            </div>
+                        );
+                    default:
+                        return <div>Select a module</div>;
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-guild-dark text-white font-sans selection:bg-guild-blue selection:text-black crt relative flex flex-col md:flex-row overflow-hidden">
+                    
+                    {/* Background Grid */}
+                    <div className="absolute inset-0 pointer-events-none opacity-10" 
+                         style={{ 
+                             backgroundImage: 'linear-gradient(#00F0FF 1px, transparent 1px), linear-gradient(90deg, #00F0FF 1px, transparent 1px)', 
+                             backgroundSize: '40px 40px' 
+                         }}>
+                    </div>
+
+                    {/* Left Sidebar / Nav */}
+                    <div className="md:w-64 border-r border-gray-800 bg-black/40 backdrop-blur-md flex flex-col z-20">
+                        <div className="p-6 text-center border-b border-gray-800">
+                            <RobotLogo />
+                            <h1 className="text-xl font-bold tracking-widest text-white">IMAGINEERS'</h1>
+                            <h2 className="text-sm tracking-[0.3em] text-guild-blue">GUILD</h2>
+                        </div>
+
+                        <nav className="flex-1 p-4 space-y-2">
+                            <button onClick={() => setActiveTab('mission')} className={`w-full flex items-center gap-3 p-3 rounded transition-all font-mono text-sm ${activeTab === 'mission' ? 'bg-guild-blue/20 text-guild-blue border-r-2 border-guild-blue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <IconHexagon className="w-4 h-4" /> VISION_CORE
+                            </button>
+                            <button onClick={() => setActiveTab('projects')} className={`w-full flex items-center gap-3 p-3 rounded transition-all font-mono text-sm ${activeTab === 'projects' ? 'bg-guild-blue/20 text-guild-blue border-r-2 border-guild-blue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <IconCpu className="w-4 h-4" /> PROJECTS_LAB
+                            </button>
+                            <button onClick={() => setActiveTab('team')} className={`w-full flex items-center gap-3 p-3 rounded transition-all font-mono text-sm ${activeTab === 'team' ? 'bg-guild-blue/20 text-guild-blue border-r-2 border-guild-blue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <IconUsers className="w-4 h-4" /> PERSONNEL
+                            </button>
+                            <button onClick={() => setActiveTab('join')} className={`w-full flex items-center gap-3 p-3 rounded transition-all font-mono text-sm ${activeTab === 'join' ? 'bg-guild-blue/20 text-guild-blue border-r-2 border-guild-blue' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+                                <IconSend className="w-4 h-4" /> TRANSMIT
+                            </button>
+                        </nav>
+
+                        <div className="p-4 border-t border-gray-800 text-[10px] font-mono text-gray-500">
+                            <p>SYS.STATUS: ONLINE</p>
+                            <p>LOC: IMAGINEER's LAB</p>
+                            <p>VER: 2025.1.19</p>
+                        </div>
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 relative overflow-hidden flex flex-col">
+                        
+                        {/* Top Bar (Mobile) */}
+                        <div className="md:hidden p-4 border-b border-gray-800 flex justify-between items-center bg-black/50 backdrop-blur">
+                            <span className="font-bold text-guild-blue">GUILD_OS</span>
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        </div>
+
+                        {/* Content Container */}
+                        <div className="flex-1 overflow-y-auto p-4 md:p-12 relative z-10">
+                            <div className="max-w-4xl mx-auto">
+                                {renderContent()}
+                            </div>
+                        </div>
+
+                        {/* Decorative HUD Elements */}
+                        <div className="absolute top-4 right-4 w-32 h-32 border-t-2 border-r-2 border-guild-blue/20 rounded-tr-xl pointer-events-none"></div>
+                        <div className="absolute bottom-4 left-4 w-32 h-32 border-b-2 border-l-2 border-guild-gold/20 rounded-bl-xl pointer-events-none"></div>
+                    </div>
+
+                </div>
+            );
+        };
+
+        // --- App Entry Point ---
+        const App = () => {
+            const [booted, setBooted] = useState(false);
+
+            return (
+                <>
+                    {!booted ? (
+                        <BootSequence onComplete={() => setBooted(true)} />
+                    ) : (
+                        <Dashboard />
+                    )}
+                </>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
